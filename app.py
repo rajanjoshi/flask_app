@@ -57,7 +57,7 @@ def form():
         </style>
     </head>
     <body>
-        <h2>Ask the AWS Bedrock Knowledge Base</h2>
+        <h2>Ask the AWS Bedrock Knowledge Base.</h2>
         <input type="text" id="question" placeholder="Enter your question..." />
         <button onclick="submitForm()">Ask</button>
         <span id="spinner">⏳</span>
