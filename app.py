@@ -103,10 +103,10 @@ def ask_question():
     try:
         response = bedrock_agent_runtime.retrieve_and_generate(
             input={"text": question},
-            knowledgeBaseId=KB_ID,
             retrieveAndGenerateConfiguration={
                 "type": "KNOWLEDGE_BASE",
                 "knowledgeBaseConfiguration": {
+                    "knowledgeBaseId": KB_ID,
                     "modelArn": MODEL_ARN
                 }
             }
