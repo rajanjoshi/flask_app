@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AURA | Upload Regulation PDFs</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f7f9;
+      color: #2d3436;
+    }
+
+    .navbar {
+      height: 70px;
+      background-color: #003366;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 20px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+    }
+
+    .navbar-top {
+      display: flex;
+      align-items: center;
+    }
+
+    .navbar img {
+      height: 34px;
+      width: 34px;
+      cursor: pointer;
+    }
+
+    .navbar-title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-left: 10px;
+      white-space: nowrap;
+    }
+
+    .typewriter-cursor {
+      display: inline-block;
+      margin-left: 2px;
+      animation: blink 0.7s infinite;
+      color: white;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 1; }
+    }
+
+    .sidebar {
+      position: fixed;
+      top: 70px;
+      left: 0;
+      bottom: 0;
+      width: 220px;
+      background-color: #2c3e50;
+      color: white;
+      padding-top: 20px;
+      z-index: 999;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar.show {
+      transform: translateX(0);
+    }
+
+    .sidebar h2 {
+      font-size: 20px;
+      text-align: center;
+      margin-bottom: 10px;
+      color: white;
+    }
+
+    .sidebar ul {
+      list-style: none;
+      padding: 0 20px;
+      margin: 0;
+    }
+
+    .sidebar ul li {
+      margin: 14px 0;
+    }
+
+    .sidebar ul li a {
+      color: #ecf0f1;
+      text-decoration: none;
+      font-size: 16px;
+    }
+
+    .sidebar ul li a:hover {
+      text-decoration: underline;
+    }
+
+    .dropdown-content {
+      display: none;
+      padding-left: 15px;
+    }
+
+    .dropdown:hover .dropdown-content {
+      display: block;
+    }
+
+    .main-content {
+      margin-top: 70px;
+      padding: 20px;
+      transition: margin-left 0.3s ease;
+    }
+
+    .main-content.shifted {
+      margin-left: 220px;
+    }
+
+    .form-container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      max-width: 90%;
+      margin: auto;
+    }
+
+    .radio-group {
+      margin-bottom: 10px;
+    }
+
+    .upload-section {
+      background-color: #ecf3f6;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+
+    .dropzone {
+      border: 2px dashed #a2d9ce;
+      background-color: #deefff;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .dropzone p {
+      font-size: 13px;
+      margin: 4px 0;
+    }
+
+    .dropzone input[type="file"] {
+      display: none;
+    }
+
+    .browse-btn-label {
+      display: inline-block;
+      margin-top: 8px;
+      background-color: #2980b9;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .submit-container {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .submit-btn {
+      background-color: #2980b9;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      font-size: 14px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .history-link {
+      text-align: center;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+
+    .history-link a {
+      color: #2c3e50;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+      }
+
+      .main-content.shifted {
+        margin-left: 0;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    #chat-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      background: white;
+      padding: 10px 15px;
+      border-radius: 30px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      border: 1px solid #ccc;
+      cursor: pointer;
+      z-index: 1000;
+      transition: transform 0.2s ease;
+    }
+
+    #chat-toggle:hover {
+      transform: scale(1.05);
+    }
+
+    #chat-toggle img {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 10px;
+    }
+
+    #chat-toggle span {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      font-family: Arial, sans-serif;
+    }
+
+    #chat-box {
+      display: none;
+      position: fixed;
+      bottom: 100px;
+      right: 20px;
+      width: 350px;
+      height: 400px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      flex-direction: column;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      z-index: 999;
+    }
+
+    #chat-header {
+      background: #007bff;
+      color: white;
+      padding: 15px;
+      font-size: 18px;
+      text-align: center;
+    }
+
+    #chat-messages {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      font-size: 14px;
+    }
+
+    #chat-input {
+      display: flex;
+      border-top: 1px solid #ccc;
+    }
+
+    #chat-input input {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      outline: none;
+      font-size: 14px;
+    }
+
+    #chat-input button {
+      padding: 12px 16px;
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    #chat-input button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <div class="navbar">
+    <div class="navbar-top">
+      <span onclick="toggleSidebar()" style="font-size: 24px; cursor: pointer;">☰</span>
+      <span class="navbar-title">
+        <span id="typewriter-text"></span><span id="cursor" class="typewriter-cursor">|</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <h2>Navigation</h2>
+    <ul>
+      <li><a href="#">🏠 Dashboard</a></li>
+      <li class="dropdown">
+        <a href="#">🧾 Add Regulation ▾</a>
+        <ul class="dropdown-content">
+          <li><a href="#">📄 Add EMIR</a></li>
+          <li><a href="#">📄 Add MiFID</a></li>
+          <li><a href="#">📄 Add Dodd-Frank</a></li>
+        </ul>
+      </li>
+      <li><a href="#">📚 Documentation</a></li>
+      <li><a href="#">🕘 Upload History</a></li>
+    </ul>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content" id="mainContent">
+    <div class="form-container">
+      <form method="POST" enctype="multipart/form-data">
+        <div class="radio-group">
+          <label><input type="radio" name="upload_mode" value="compare" checked onchange="toggleUploadMode()"> 🆚 Compare Old vs New PDF</label>
+          <label><input type="radio" name="upload_mode" value="first_time" onchange="toggleUploadMode()"> 🆕 First Time Upload</label>
+        </div>
+
+        <div id="compare-fields">
+          <div class="upload-section">
+            <h3>📤 Upload Old Regulation PDF</h3>
+            <div class="dropzone">
+              <p>Drag and drop file here</p>
+              <p>Limit 200MB per file • PDF</p>
+              <label class="browse-btn-label">Browse files
+                <input type="file" name="old_file" accept=".pdf">
+              </label>
+            </div>
+          </div>
+
+          <div class="upload-section">
+            <h3>📤 Upload New Regulation PDF</h3>
+            <div class="dropzone">
+              <p>Drag and drop file here</p>
+              <p>Limit 200MB per file • PDF</p>
+              <label class="browse-btn-label">Browse files
+                <input type="file" name="new_file" accept=".pdf">
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div id="first-time-field" class="hidden">
+          <div class="upload-section">
+            <h3>🆕 Upload Regulation PDF</h3>
+            <div class="dropzone">
+              <p>Drag and drop file here</p>
+              <p>Limit 200MB per file • PDF</p>
+              <label class="browse-btn-label">Browse files
+                <input type="file" name="first_time_file" accept=".pdf">
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="submit-container">
+          <button type="submit" class="submit-btn">Upload</button>
+        </div>
+
+        <div class="history-link">
+          <a href="/history">🕘 View Upload History</a>
+        </div>
+      </form>
+    </div>
+  </div>
+   
+  <div id="chat-toggle">
+    <img src="/static/robot.png" alt="Chat Icon">
+    <span>Aura Bot</span>
+  </div>
+  
+  <div id="chat-box">
+    <div id="chat-header">Aura Bot</div>
+    <div id="chat-messages"></div>
+    <div id="chat-input">
+      <input type="text" id="msg-input" placeholder="Type your message..." />
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+
+  <!-- SCRIPT -->
+  <script>
+    function toggleUploadMode() {
+      const mode = document.querySelector('input[name="upload_mode"]:checked').value;
+      const compareFields = document.getElementById("compare-fields");
+      const firstTimeField = document.getElementById("first-time-field");
+
+      if (mode === "compare") {
+        compareFields.classList.remove("hidden");
+        firstTimeField.classList.add("hidden");
+      } else {
+        compareFields.classList.add("hidden");
+        firstTimeField.classList.remove("hidden");
+      }
+    }
+
+    // Ensure correct visibility on page load
+    window.onload = toggleUploadMode;
+
+    const chatToggle = document.getElementById("chat-toggle");
+  const chatBox = document.getElementById("chat-box");
+  const sendBtn = document.getElementById("send-btn");
+  const msgInput = document.getElementById("msg-input");
+  const chatMessages = document.getElementById("chat-messages");
+
+  chatToggle.onclick = () => {
+    chatBox.style.display = (chatBox.style.display === "none" || chatBox.style.display === "") ? "flex" : "none";
+  };
+
+  sendBtn.onclick = async () => {
+    const msg = msgInput.value.trim();
+    if (msg) {
+      appendMessage("You", msg);
+      msgInput.value = "";
+
+      try {
+        const res = await fetch('/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: msg })
+        });
+        const data = await res.json();
+        appendMessage("Aura Bot", data.answer || data.error || "No response.");
+      } catch (err) {
+        appendMessage("Aura Bot", "Error: " + err.message);
+      }
+    }
+  };
+
+  function appendMessage(sender, text) {
+    const div = document.createElement("div");
+    div.textContent = `${sender}: ${text}`;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  msgInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") sendBtn.click();
+  });
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      const main = document.getElementById("mainContent");
+      sidebar.classList.toggle("show");
+      main.classList.toggle("shifted");
+    }
+
+    function toggleUploadMode() {
+      const mode = document.querySelector('input[name="upload_mode"]:checked').value;
+      document.getElementById("compare-fields").classList.toggle("hidden", mode !== "compare");
+      document.getElementById("first-time-field").classList.toggle("hidden", mode !== "first_time");
+    }
+    
+    
+
+    window.onload = toggleUploadMode;
+
+    // Typewriter with erase and repeat
+    const text = "🤖AURA | Automated Understanding & Regulatory Assistant 🔗";
+    const textEl = document.getElementById("typewriter-text");
+    let index = 0;
+    let typing = true;
+    const typingSpeed = 60;
+    const erasingSpeed = 40;
+    const pauseAfterTyping = 2000;
+    const pauseAfterErasing = 1000;
+
+    function typeAndErase() {
+      if (typing) {
+        if (index <= text.length) {
+          textEl.textContent = text.substring(0, index);
+          index++;
+          setTimeout(typeAndErase, typingSpeed);
+        } else {
+          typing = false;
+          setTimeout(typeAndErase, pauseAfterTyping);
+        }
+      } else {
+        if (index >= 0) {
+          textEl.textContent = text.substring(0, index);
+          index--;
+          setTimeout(typeAndErase, erasingSpeed);
+        } else {
+          typing = true;
+          setTimeout(typeAndErase, pauseAfterErasing);
+        }
+      }
+    }
+
+    typeAndErase();
+  </script>
+
+</body>
+</html>
