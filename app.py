@@ -107,9 +107,7 @@ def ask_question():
                 "type": "KNOWLEDGE_BASE",
                 "knowledgeBaseConfiguration": {
                     "knowledgeBaseId": KB_ID,
-                    "inferenceConfiguration": {
-                        "inferenceProfileArn": "arn:aws:bedrock:us-east-2:908924925940:inference-profile/anthropic.claude-3-haiku-20240307-v1:0"
-                    }
+                    "modelArn" : "arn:aws:bedrock:us-east-2:908924925940:inference-profile/anthropic.claude-3-haiku-20240307-v1:0"
                 }
             }
         )
