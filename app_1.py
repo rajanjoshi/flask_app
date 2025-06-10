@@ -9,6 +9,7 @@ from utils import extract_text_from_pdf, parse_graph_data, markdown_to_docx
 from db_models import db, Regulation, Upload, Summary, EntityGraph
 from docx import Document
 from io import BytesIO
+import boto3
 
 app = Flask(__name__)
 
@@ -19,85 +20,8 @@ MODEL_ARN = os.environ.get("MODEL_ARN","arn:aws:bedrock:us-east-2::foundation-mo
 # Create Bedrock Agent Runtime client
 bedrock_agent_runtime = boto3.client("bedrock-agent-runtime", region_name=BEDROCK_REGION)
 
-@app.route("/chat")
-def form():
-    return '''
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Flask + Bedrock Chat</title>
-        <style>
-            body { font-family: Arial, sans-serif; padding: 40px; background-color: #f0f2f5; }
-            h2 { color: #333; }
-            input[type=text] {
-                width: 80%%;
-                padding: 12px;
-                margin: 8px 0;
-                box-sizing: border-box;
-                border: 2px solid #ccc;
-                border-radius: 4px;
-                font-size: 16px;
-            }
-            button {
-                padding: 12px 20px;
-                background-color: #4CAF50;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 16px;
-            }
-            button:hover {
-                background-color: #45a049;
-            }
-            #response {
-                margin-top: 20px;
-                padding: 10px;
-                border-radius: 4px;
-                background-color: white;
-                border: 1px solid #ccc;
-            }
-            #spinner {
-                display: none;
-                margin-left: 10px;
-            }
-        </style>
-    </head>
-    <body>
-        <h2>Ask the AWS Bedrock Knowledge Base.</h2>
-        <input type="text" id="question" placeholder="Enter your question..." />
-        <button onclick="submitForm()">Ask</button>
-        <span id="spinner">⏳</span>
-        <div id="response"></div>
 
-        <script>
-            function submitForm() {
-                const question = document.getElementById("question").value;
-                if (!question) {
-                    alert("Please enter a question.");
-                    return;
-                }
-                document.getElementById("spinner").style.display = "inline";
-                document.getElementById("response").innerText = "";
-                fetch('/ask', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({question})
-                })
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById("spinner").style.display = "none";
-                    document.getElementById("response").innerText = data.answer || data.error;
-                })
-                .catch(err => {
-                    document.getElementById("spinner").style.display = "none";
-                    document.getElementById("response").innerText = "Error: " + err.message;
-                });
-            }
-        </script>
-    </body>
-    </html>
-    '''
+    
 
 @app.route("/ask", methods=["POST"])
 def ask_question():
@@ -157,66 +81,6 @@ def index():
     return render_template("index.html", regulations=regulations)
 
 
-def process_upload(upload_id):
-    upload = Upload.query.get(upload_id)
-
-    db.session.query(Summary).filter_by(upload_id=upload.id).delete()
-    db.session.query(EntityGraph).filter_by(upload_id=upload.id).delete()
-
-    if not upload.old_path:
-        new_text = extract_text_from_pdf(upload.new_path)
-        new_summary = get_summary_with_context(new_text)
-        new_json = get_entity_relationship_with_context(new_summary)
-
-        G_new = parse_graph_data(json.loads(new_json))
-        graph_new_json = json.dumps({
-            "nodes": [{"id": n, **G_new.nodes[n]} for n in G_new.nodes],
-            "edges": [{"from": u, "to": v, **G_new[u][v]} for u, v in G_new.edges]
-        })
-
-        db.session.add(Summary(upload_id=upload.id, old_summary=None, new_summary=new_summary))
-        db.session.add(EntityGraph(
-            upload_id=upload.id,
-            old_json=None,
-            new_json=new_json,
-            graph_old=None,
-            graph_new=graph_new_json
-        ))
-    else:
-        old_text = extract_text_from_pdf(upload.old_path)
-        new_text = extract_text_from_pdf(upload.new_path)
-
-        old_summary = get_summary_with_context(old_text)
-        new_summary = get_summary_with_context(new_text, context=old_summary)
-
-        old_json = get_entity_relationship_with_context(old_summary)
-        new_json = get_entity_relationship_with_context(new_summary, context=old_json)
-
-        G_old = parse_graph_data(json.loads(old_json))
-        G_new = parse_graph_data(json.loads(new_json))
-
-        graph_old_json = json.dumps({
-            "nodes": [{"id": n, **G_old.nodes[n]} for n in G_old.nodes],
-            "edges": [{"from": u, "to": v, **G_old[u][v]} for u, v in G_old.edges]
-        })
-
-        graph_new_json = json.dumps({
-            "nodes": [{"id": n, **G_new.nodes[n]} for n in G_new.nodes],
-            "edges": [{"from": u, "to": v, **G_new[u][v]} for u, v in G_new.edges]
-        })
-
-        db.session.add(Summary(upload_id=upload.id, old_summary=old_summary, new_summary=new_summary))
-        db.session.add(EntityGraph(
-            upload_id=upload.id,
-            old_json=old_json,
-            new_json=new_json,
-            graph_old=graph_old_json,
-            graph_new=graph_new_json
-        ))
-
-    db.session.commit()
-
-
 @app.route("/compare/<int:upload_id>")
 def compare(upload_id):
     return render_template("compare.html", upload_id=upload_id)
@@ -266,7 +130,10 @@ def approve(upload_id):
         mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
 
-
+@app.route("/chat")
+def chat():
+    return render_template("chat.html")
+    
 @app.route("/history")
 def history():
     uploads = Upload.query.order_by(Upload.upload_time.desc()).all()
@@ -287,4 +154,6 @@ if __name__ == "__main__":
             ])
             db.session.commit()
 
-    app.run(debug=True)
+    host = "0.0.0.0"
+    port = 7000
+    app.run(debug=True, host=host, port=port)
